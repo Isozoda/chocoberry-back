@@ -26,7 +26,12 @@ export class InventoryController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.inventoryService.findAll(user.id, category, page ? parseInt(page) : 1, limit ? parseInt(limit) : 100);
+    return this.inventoryService.findAll(
+      user.id,
+      category,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 100,
+    );
   }
 
   @Post()
@@ -103,6 +108,11 @@ export class InventoryController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.inventoryService.getHistory(user.id, id, page ? parseInt(page) : 1, limit ? parseInt(limit) : 50);
+    return this.inventoryService.getHistory(
+      user.id,
+      id,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 50,
+    );
   }
 }

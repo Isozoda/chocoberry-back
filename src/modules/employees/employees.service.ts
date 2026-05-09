@@ -21,7 +21,10 @@ export class EmployeesService {
 
   async findAll(userId: string) {
     const b = await this.getBusiness(userId);
-    return this.prisma.employee.findMany({ where: { businessId: b.id, isActive: true }, orderBy: { name: 'asc' } });
+    return this.prisma.employee.findMany({
+      where: { businessId: b.id, isActive: true },
+      orderBy: { name: 'asc' },
+    });
   }
 
   async findOne(userId: string, id: string) {
@@ -76,7 +79,9 @@ export class EmployeesService {
 
   async pay(userId: string, employeeId: string, dto: PayEmployeeDto) {
     const b = await this.getBusiness(userId);
-    const employee = await this.prisma.employee.findFirst({ where: { id: employeeId, businessId: b.id } });
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, businessId: b.id },
+    });
     if (!employee) throw new NotFoundException('Employee not found');
 
     return this.prisma.$transaction(async (tx) => {
@@ -118,7 +123,10 @@ export class EmployeesService {
       const cashbox = await tx.cashbox.findUnique({ where: { businessId: b.id } });
       if (cashbox) {
         const newBalance = toDecimal(cashbox.balance).minus(toDecimal(dto.amount));
-        await tx.cashbox.update({ where: { businessId: b.id }, data: { balance: newBalance, lastUpdated: new Date() } });
+        await tx.cashbox.update({
+          where: { businessId: b.id },
+          data: { balance: newBalance, lastUpdated: new Date() },
+        });
         await tx.cashboxOperation.create({
           data: {
             cashboxId: cashbox.id,
@@ -140,7 +148,10 @@ export class EmployeesService {
     const b = await this.getBusiness(userId);
     const e = await this.prisma.employee.findFirst({ where: { id: employeeId, businessId: b.id } });
     if (!e) throw new NotFoundException('Employee not found');
-    return this.prisma.employeePayment.findMany({ where: { employeeId }, orderBy: { paidAt: 'desc' } });
+    return this.prisma.employeePayment.findMany({
+      where: { employeeId },
+      orderBy: { paidAt: 'desc' },
+    });
   }
 
   async createFine(userId: string, employeeId: string, dto: CreateFineDto) {
@@ -169,7 +180,11 @@ export class EmployeesService {
     const b = await this.getBusiness(userId);
     const e = await this.prisma.employee.findFirst({ where: { id: employeeId, businessId: b.id } });
     if (!e) throw new NotFoundException('Employee not found');
-    return this.prisma.shift.findMany({ where: { employeeId }, orderBy: { startTime: 'desc' }, take: 100 });
+    return this.prisma.shift.findMany({
+      where: { employeeId },
+      orderBy: { startTime: 'desc' },
+      take: 100,
+    });
   }
 
   async createShift(userId: string, employeeId: string, dto: CreateShiftDto) {
@@ -196,7 +211,9 @@ export class EmployeesService {
 
   async getPayrollForMonth(userId: string, employeeId: string, month: string) {
     const b = await this.getBusiness(userId);
-    const employee = await this.prisma.employee.findFirst({ where: { id: employeeId, businessId: b.id } });
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, businessId: b.id },
+    });
     if (!employee) throw new NotFoundException('Employee not found');
 
     const { year, month: m } = parseMonth(month);
@@ -241,7 +258,9 @@ export class EmployeesService {
 
   async calculateMonthlyPayroll(userId: string, dto: CalcPayrollDto) {
     const b = await this.getBusiness(userId);
-    const employees = await this.prisma.employee.findMany({ where: { businessId: b.id, isActive: true } });
+    const employees = await this.prisma.employee.findMany({
+      where: { businessId: b.id, isActive: true },
+    });
     const { year, month: m } = parseMonth(dto.month);
     const start = startOfMonth(year, m);
     const end = endOfMonth(year, m);

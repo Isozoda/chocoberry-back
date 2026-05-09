@@ -1,4 +1,5 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import * as https from 'https';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import Anthropic from '@anthropic-ai/sdk';
@@ -55,8 +56,10 @@ export class AiService {
 
   private async callAi(prompt: string, retryCount = 0): Promise<unknown> {
     try {
-      const apiKey = (process.env.ANTHROPIC_API_KEY || this.config.get<string>('anthropic.apiKey'))?.trim();
-      
+      const apiKey = (
+        process.env.ANTHROPIC_API_KEY || this.config.get<string>('anthropic.apiKey')
+      )?.trim();
+
       // If it's a Google API Key (starts with AIzaSy)
       if (apiKey?.startsWith('AIzaSy')) {
         return await this.callGemini(prompt, apiKey);
@@ -65,8 +68,10 @@ export class AiService {
       return await this.callClaude(prompt, apiKey);
     } catch (e) {
       if ((e.message.includes('429') || e.message.includes('503')) && retryCount < 2) {
-        this.logger.warn(`AI Rate limit/Service error. Retrying in 5s... (Attempt ${retryCount + 1})`);
-        await new Promise(res => setTimeout(res, 5000));
+        this.logger.warn(
+          `AI Rate limit/Service error. Retrying in 5s... (Attempt ${retryCount + 1})`,
+        );
+        await new Promise((res) => setTimeout(res, 5000));
         return this.callAi(prompt, retryCount + 1);
       }
       throw e;
@@ -82,60 +87,76 @@ export class AiService {
         messages: [{ role: 'user', content: prompt }],
       });
       const text = message.content[0].type === 'text' ? message.content[0].text : '';
-      const cleaned = text.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim();
+      const cleaned = text
+        .replace(/^```(?:json)?\n?/m, '')
+        .replace(/\n?```$/m, '')
+        .trim();
       return JSON.parse(cleaned);
     } catch (err) {
       this.logger.error(`Claude API error: ${err.message}`);
-      throw new ServiceUnavailableException('AI сервис дастрас нест (Claude). Лутфан маблағи ҳисобро тафтиш кунед.');
+      throw new ServiceUnavailableException(
+        'AI сервис дастрас нест (Claude). Лутфан маблағи ҳисобро тафтиш кунед.',
+      );
     }
   }
 
   private async callGemini(prompt: string, apiKey: string): Promise<unknown> {
     return new Promise((resolve, reject) => {
-      const https = require('https');
-      const model = 'gemini-2.5-flash'; 
+      const model = 'gemini-2.5-flash';
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
       const data = JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
+        contents: [{ parts: [{ text: prompt }] }],
       });
 
-      const req = https.request(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(data)
-        }
-      }, (res) => {
-        let body = '';
-        res.on('data', (chunk) => body += chunk);
-        res.on('end', () => {
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            try {
-              const json = JSON.parse(body);
-              const text = json.candidates[0].content.parts[0].text;
-              const cleaned = text.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim();
-              resolve(JSON.parse(cleaned));
-            } catch (e) {
-              reject(new Error(`Failed to parse Gemini response: ${e.message}`));
+      const req = https.request(
+        url,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(data),
+          },
+        },
+        (res) => {
+          let body = '';
+          res.on('data', (chunk) => (body += chunk));
+          res.on('end', () => {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              try {
+                const json = JSON.parse(body);
+                const text = json.candidates[0].content.parts[0].text;
+                const cleaned = text
+                  .replace(/^```(?:json)?\n?/m, '')
+                  .replace(/\n?```$/m, '')
+                  .trim();
+                resolve(JSON.parse(cleaned));
+              } catch (e) {
+                reject(new Error(`Failed to parse Gemini response: ${e.message}`));
+              }
+            } else {
+              this.logger.error(`Gemini API error (Status ${res.statusCode}): ${body}`);
+              reject(new Error(`Gemini API error (Status ${res.statusCode})`));
             }
-          } else {
-            this.logger.error(`Gemini API error (Status ${res.statusCode}): ${body}`);
-            reject(new Error(`Gemini API error (Status ${res.statusCode})`));
-          }
-        });
-      });
+          });
+        },
+      );
 
       req.on('error', (e) => reject(e));
       req.write(data);
       req.end();
-    }).catch(err => {
+    }).catch((err) => {
       this.logger.error(`Gemini API error: ${err.message}`);
-      throw new ServiceUnavailableException(`AI сервис дастрас нест (Gemini). Хатогӣ: ${err.message}`);
+      throw new ServiceUnavailableException(
+        `AI сервис дастрас нест (Gemini). Хатогӣ: ${err.message}`,
+      );
     });
   }
 
-  private getPeriodDates(period: 'day' | 'week' | 'month', date?: string): { start: Date; end: Date; label: string } {
+  private getPeriodDates(
+    period: 'day' | 'week' | 'month',
+    date?: string,
+  ): { start: Date; end: Date; label: string } {
     const now = date ? new Date(date) : new Date();
     const end = new Date(now);
     end.setHours(23, 59, 59, 999);
@@ -228,7 +249,7 @@ export class AiService {
     };
 
     const aiResult = await this.callAi(buildSalesPrompt(promptData));
-    const result = { ...aiResult as object, rawData };
+    const result = { ...(aiResult as object), rawData };
     this.setCache(cacheKey, result);
     return result;
   }
@@ -254,7 +275,9 @@ export class AiService {
       }),
     ]);
 
-    const usageMap = new Map(usageData.map((u) => [u.inventoryItemId, Number(u._sum.quantity || 0)]));
+    const usageMap = new Map(
+      usageData.map((u) => [u.inventoryItemId, Number(u._sum.quantity || 0)]),
+    );
 
     const currentStock = inventoryItems.map((item) => {
       const monthlyUsage = usageMap.get(item.id) || 0;
@@ -275,7 +298,11 @@ export class AiService {
       .map((u) => {
         const item = inventoryItems.find((i) => i.id === u.inventoryItemId);
         if (!item) return null;
-        return { name: item.name, totalUsed: Number(u._sum.quantity || 0).toFixed(2), unit: item.unit };
+        return {
+          name: item.name,
+          totalUsed: Number(u._sum.quantity || 0).toFixed(2),
+          unit: item.unit,
+        };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null)
       .sort((a, bItem) => Number(bItem.totalUsed) - Number(a.totalUsed))
@@ -283,7 +310,7 @@ export class AiService {
 
     const promptData = { daysAhead: dto.daysAhead, currentStock, topUsedItems };
     const aiResult = await this.callAi(buildInventoryPrompt(promptData));
-    const result = { ...aiResult as object, rawData: { currentStock } };
+    const result = { ...(aiResult as object), rawData: { currentStock } };
     this.setCache(cacheKey, result);
     return result;
   }
@@ -299,42 +326,47 @@ export class AiService {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const [salesAgg, expAgg, topProducts, inventoryItems, usageData, fixedExpenses] = await Promise.all([
-      this.prisma.sale.aggregate({
-        where: { businessId: b.id, status: 'COMPLETED', date: { gte: thirtyDaysAgo } },
-        _sum: { total: true },
-      }),
-      this.prisma.expense.aggregate({
-        where: { businessId: b.id, date: { gte: thirtyDaysAgo } },
-        _sum: { amount: true },
-      }),
-      this.prisma.saleItem.groupBy({
-        by: ['name'],
-        where: { sale: { businessId: b.id, status: 'COMPLETED', date: { gte: thirtyDaysAgo } } },
-        _sum: { total: true },
-        orderBy: { _sum: { total: 'desc' } },
-        take: 10,
-      }),
-      this.prisma.inventoryItem.findMany({
-        where: { businessId: b.id, isActive: true },
-        select: { id: true, name: true, currentStock: true, unit: true },
-      }),
-      this.prisma.inventoryTransaction.groupBy({
-        by: ['inventoryItemId'],
-        where: { businessId: b.id, type: 'OUT', date: { gte: thirtyDaysAgo } },
-        _sum: { quantity: true },
-      }),
-      this.prisma.fixedExpense.findMany({
-        where: { businessId: b.id }
-      })
-    ]);
+    const [salesAgg, expAgg, topProducts, inventoryItems, usageData, fixedExpenses] =
+      await Promise.all([
+        this.prisma.sale.aggregate({
+          where: { businessId: b.id, status: 'COMPLETED', date: { gte: thirtyDaysAgo } },
+          _sum: { total: true },
+        }),
+        this.prisma.expense.aggregate({
+          where: { businessId: b.id, date: { gte: thirtyDaysAgo } },
+          _sum: { amount: true },
+        }),
+        this.prisma.saleItem.groupBy({
+          by: ['name'],
+          where: { sale: { businessId: b.id, status: 'COMPLETED', date: { gte: thirtyDaysAgo } } },
+          _sum: { total: true },
+          orderBy: { _sum: { total: 'desc' } },
+          take: 10,
+        }),
+        this.prisma.inventoryItem.findMany({
+          where: { businessId: b.id, isActive: true },
+          select: { id: true, name: true, currentStock: true, unit: true },
+        }),
+        this.prisma.inventoryTransaction.groupBy({
+          by: ['inventoryItemId'],
+          where: { businessId: b.id, type: 'OUT', date: { gte: thirtyDaysAgo } },
+          _sum: { quantity: true },
+        }),
+        this.prisma.fixedExpense.findMany({
+          where: { businessId: b.id },
+        }),
+      ]);
 
-    const itemUsageMap = new Map(usageData.map((u) => [u.inventoryItemId, Number(u._sum.quantity || 0)]));
+    const itemUsageMap = new Map(
+      usageData.map((u) => [u.inventoryItemId, Number(u._sum.quantity || 0)]),
+    );
 
     const totalSales = toDecimal(salesAgg._sum.total || 0);
     const totalExpenses = toDecimal(expAgg._sum.amount || 0);
 
-    const sortedProducts = [...topProducts].sort((a, bP) => Number(bP._sum.total || 0) - Number(a._sum.total || 0));
+    const sortedProducts = [...topProducts].sort(
+      (a, bP) => Number(bP._sum.total || 0) - Number(a._sum.total || 0),
+    );
 
     const inventoryWithDays = inventoryItems.map((item) => {
       const monthlyUsage = itemUsageMap.get(item.id) || 0;
@@ -362,10 +394,10 @@ export class AiService {
         revenue: (p._sum.total || new Decimal(0)).toString(),
       })),
       inventory: inventoryWithDays,
-      fixedExpenses: fixedExpenses.map(fe => ({
+      fixedExpenses: fixedExpenses.map((fe) => ({
         name: fe.name,
         amount: toDecimal(fe.amount).toString(),
-        period: fe.period
+        period: fe.period,
       })),
       question: dto.question,
     };
@@ -375,8 +407,8 @@ export class AiService {
       await this.saveChatMessage(userId, 'user', dto.question);
     }
 
-    const aiResult = await this.callAi(buildAdvisorPrompt(promptData)) as any;
-    
+    const aiResult = (await this.callAi(buildAdvisorPrompt(promptData))) as any;
+
     // Save AI response to history
     const aiContent = aiResult.answerToQuestion || aiResult.weeklyAdvice;
     if (aiContent) {
@@ -392,7 +424,7 @@ export class AiService {
       await this.executeAiAction(b.id, userId, aiResult.action);
     }
 
-    const result = { ...aiResult as object, rawData };
+    const result = { ...(aiResult as object), rawData };
     if (!dto.question) this.setCache(cacheKey, result);
     return result;
   }
@@ -400,24 +432,22 @@ export class AiService {
   private async executeAiAction(businessId: string, userId: string, action: any): Promise<void> {
     try {
       this.logger.log(`Executing AI Action: ${action.type} for business ${businessId}`);
-      
+
       if (action.type === 'UPDATE_INVENTORY') {
         const { itemName, quantity, type } = action.params;
         const item = await this.prisma.inventoryItem.findFirst({
-          where: { businessId, name: { contains: itemName, mode: 'insensitive' } }
+          where: { businessId, name: { contains: itemName, mode: 'insensitive' } },
         });
 
         if (item) {
           const stockBefore = toDecimal(item.currentStock);
           const qty = new Decimal(quantity);
-          const newStock = type === 'IN' 
-            ? stockBefore.plus(qty) 
-            : stockBefore.minus(qty);
+          const newStock = type === 'IN' ? stockBefore.plus(qty) : stockBefore.minus(qty);
 
           await this.prisma.$transaction([
             this.prisma.inventoryItem.update({
               where: { id: item.id },
-              data: { currentStock: newStock }
+              data: { currentStock: newStock },
             }),
             this.prisma.inventoryTransaction.create({
               data: {
@@ -429,9 +459,9 @@ export class AiService {
                 totalCost: qty.mul(toDecimal(item.avgCost)),
                 stockBefore: stockBefore,
                 stockAfter: newStock,
-                reason: `AI Action: ${action.reason || 'Auto-update'}`
-              }
-            })
+                reason: `AI Action: ${action.reason || 'Auto-update'}`,
+              },
+            }),
           ]);
           this.logger.log(`Successfully updated inventory for ${item.name}`);
         }
@@ -439,7 +469,7 @@ export class AiService {
         const { sales, fixedExpenses, dailyExpenses } = action.params;
         let totalSales = new Decimal(0);
         let totalExp = new Decimal(0);
-        
+
         // 1. Process Sales for each location
         for (const s of sales) {
           const amount = new Decimal(s.amount);
@@ -452,8 +482,8 @@ export class AiService {
               total: amount,
               notes: `AI Daily Sale: ${s.location}`,
               date: new Date(),
-              status: 'COMPLETED'
-            }
+              status: 'COMPLETED',
+            },
           });
         }
 
@@ -468,8 +498,8 @@ export class AiService {
                 amount: dailyAmount,
                 expenseType: 'FIXED',
                 description: `Daily portion of ${fe.name} (${fe.monthlyAmount}/mo)`,
-                date: new Date()
-              }
+                date: new Date(),
+              },
             });
           }
         }
@@ -485,8 +515,8 @@ export class AiService {
                 amount: amount,
                 expenseType: 'VARIABLE',
                 description: de.name,
-                date: new Date()
-              }
+                date: new Date(),
+              },
             });
           }
         }
@@ -494,18 +524,18 @@ export class AiService {
         // 4. Update/Create Daily Report Summary
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         await this.prisma.dailyReport.upsert({
           where: {
             businessId_date: {
               businessId,
-              date: today
-            }
+              date: today,
+            },
           },
           update: {
             totalSales: { increment: totalSales },
             totalExpenses: { increment: totalExp },
-            remaining: { increment: totalSales.minus(totalExp) }
+            remaining: { increment: totalSales.minus(totalExp) },
           },
           create: {
             businessId,
@@ -514,11 +544,13 @@ export class AiService {
             totalSales: totalSales,
             totalExpenses: totalExp,
             remaining: totalSales.minus(totalExp),
-            notes: 'AI Automated Daily Report'
-          }
+            notes: 'AI Automated Daily Report',
+          },
         });
 
-        this.logger.log(`Successfully processed daily report and updated summary for business ${businessId}`);
+        this.logger.log(
+          `Successfully processed daily report and updated summary for business ${businessId}`,
+        );
       }
     } catch (e) {
       this.logger.error(`Failed to execute AI action: ${e.message}`);
@@ -530,7 +562,7 @@ export class AiService {
     return this.prisma.aiMessage.findMany({
       where: { businessId: b.id },
       orderBy: { createdAt: 'asc' },
-      take: 100 // Last 100 messages
+      take: 100, // Last 100 messages
     });
   }
 
@@ -540,8 +572,8 @@ export class AiService {
       data: {
         businessId: b.id,
         role,
-        content
-      }
+        content,
+      },
     });
   }
 }

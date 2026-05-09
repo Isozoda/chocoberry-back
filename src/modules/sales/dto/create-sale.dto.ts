@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaymentMethod } from '@prisma/client';
 
@@ -20,7 +29,10 @@ export class SaleItemDto {
   @Min(1)
   quantity: number;
 
-  @ApiPropertyOptional({ example: 35, description: 'Override unit price (defaults to product price)' })
+  @ApiPropertyOptional({
+    example: 35,
+    description: 'Override unit price (defaults to product price)',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()

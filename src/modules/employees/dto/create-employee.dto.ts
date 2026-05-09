@@ -17,7 +17,10 @@ export class CreateEmployeeDto {
   @IsBoolean()
   isOwner?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Buys consumables for business (Намк, Баҳрулло)' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Buys consumables for business (Намк, Баҳрулло)',
+  })
   @IsOptional()
   @IsBoolean()
   isConsumableBuyer?: boolean;

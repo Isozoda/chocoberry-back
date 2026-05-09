@@ -9,7 +9,10 @@ export class CleaningDto {
   @Min(0)
   rawQuantity: number;
 
-  @ApiPropertyOptional({ example: 100, description: 'Actual cleaned quantity (if omitted, auto-calc from cleaningLossPct)' })
+  @ApiPropertyOptional({
+    example: 100,
+    description: 'Actual cleaned quantity (if omitted, auto-calc from cleaningLossPct)',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()

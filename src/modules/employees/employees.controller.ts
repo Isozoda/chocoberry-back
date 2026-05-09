@@ -88,7 +88,11 @@ export class EmployeesController {
 
   @Get(':id/payroll/:month')
   @ApiOperation({ summary: 'Get calculated payroll for employee for specific month' })
-  getPayrollForMonth(@CurrentUser() user: any, @Param('id') id: string, @Param('month') month: string) {
+  getPayrollForMonth(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Param('month') month: string,
+  ) {
     return this.employeesService.getPayrollForMonth(user.id, id, month);
   }
 }

@@ -44,9 +44,14 @@ async function bootstrap() {
   // Swagger
   const config = new DocumentBuilder()
     .setTitle('Choco Berry Business API')
-    .setDescription('Daily report, BOM, inventory, sales, payroll, P&L — Complete business management for Choco Berry')
+    .setDescription(
+      'Daily report, BOM, inventory, sales, payroll, P&L — Complete business management for Choco Berry',
+    )
     .setVersion('2.0.0')
-    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT', name: 'JWT', in: 'header' }, 'JWT')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', name: 'JWT', in: 'header' },
+      'JWT',
+    )
     .addServer('http://localhost:3000')
     .addTag('auth', 'Authentication & User management')
     .addTag('business', 'Business profile & dashboard')

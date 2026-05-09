@@ -1,4 +1,15 @@
-import { Controller, Post, Get, Delete, Body, Req, Headers, UnauthorizedException, HttpCode, Query } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  Req,
+  Headers,
+  UnauthorizedException,
+  HttpCode,
+  Query,
+} from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import { SubscribeDto } from './dto/subscribe.dto';
 import { NotifyLowStockDto, NotifyDailyReportDto } from './dto/notify.dto';
@@ -75,7 +86,12 @@ export class TelegramController {
   @Public()
   @HttpCode(200)
   bulkDeduct(
-    @Body() body: { chatId: string; items: Array<{ itemId: string; quantity: number; unit: string }>; rawMessage?: string },
+    @Body()
+    body: {
+      chatId: string;
+      items: Array<{ itemId: string; quantity: number; unit: string }>;
+      rawMessage?: string;
+    },
     @Headers('x-bot-secret') secret: string,
   ) {
     const expected = this.config.get<string>('telegram.botSecret') || 'chocoberry_bot_secret';
@@ -91,10 +107,7 @@ export class TelegramController {
   @Post('daily-report/parse')
   @Public()
   @HttpCode(200)
-  parseDailyReport(
-    @Body() body: { rawText: string },
-    @Headers('x-bot-secret') secret: string,
-  ) {
+  parseDailyReport(@Body() body: { rawText: string }, @Headers('x-bot-secret') secret: string) {
     const expected = this.config.get<string>('telegram.botSecret') || 'chocoberry_bot_secret';
     if (!secret || secret !== expected) throw new UnauthorizedException('Invalid bot secret');
     return this.telegramService.parseDailyReport(body.rawText);
@@ -104,7 +117,8 @@ export class TelegramController {
   @Public()
   @HttpCode(200)
   async saveDailyReport(
-    @Body() body: {
+    @Body()
+    body: {
       chatId: string;
       date: string;
       openingBalance: number;

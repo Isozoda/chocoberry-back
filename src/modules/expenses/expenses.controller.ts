@@ -25,7 +25,14 @@ export class ExpensesController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.expensesService.findAll(user.id, type, from, to, page ? parseInt(page) : 1, limit ? parseInt(limit) : 50);
+    return this.expensesService.findAll(
+      user.id,
+      type,
+      from,
+      to,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 50,
+    );
   }
 
   @Post()

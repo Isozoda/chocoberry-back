@@ -22,7 +22,12 @@ export class ProductsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.productsService.findAll(user.id, cupType, page ? parseInt(page) : 1, limit ? parseInt(limit) : 100);
+    return this.productsService.findAll(
+      user.id,
+      cupType,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 100,
+    );
   }
 
   @Post()

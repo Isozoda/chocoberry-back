@@ -36,12 +36,17 @@ export class CashboxService {
     };
   }
 
-  private async doOperation(userId: string, type: 'IN' | 'OUT' | 'OPEN' | 'CLOSE' | 'ADJUSTMENT', dto: CashboxOpDto) {
+  private async doOperation(
+    userId: string,
+    type: 'IN' | 'OUT' | 'OPEN' | 'CLOSE' | 'ADJUSTMENT',
+    dto: CashboxOpDto,
+  ) {
     const b = await this.getBusiness(userId);
     const cashbox = await this.getCashbox(b.id);
     const amount = toDecimal(dto.amount);
     const balanceBefore = toDecimal(cashbox.balance);
-    const balanceAfter = type === 'IN' || type === 'OPEN' ? balanceBefore.plus(amount) : balanceBefore.minus(amount);
+    const balanceAfter =
+      type === 'IN' || type === 'OPEN' ? balanceBefore.plus(amount) : balanceBefore.minus(amount);
 
     return this.prisma.$transaction(async (tx) => {
       await tx.cashbox.update({
@@ -105,8 +110,12 @@ export class CashboxService {
       orderBy: { createdAt: 'asc' },
     });
 
-    const totalIn = ops.filter((o) => o.type === 'IN' || o.type === 'OPEN').reduce((acc, o) => acc.plus(toDecimal(o.amount)), toDecimal(0));
-    const totalOut = ops.filter((o) => o.type === 'OUT' || o.type === 'CLOSE').reduce((acc, o) => acc.plus(toDecimal(o.amount)), toDecimal(0));
+    const totalIn = ops
+      .filter((o) => o.type === 'IN' || o.type === 'OPEN')
+      .reduce((acc, o) => acc.plus(toDecimal(o.amount)), toDecimal(0));
+    const totalOut = ops
+      .filter((o) => o.type === 'OUT' || o.type === 'CLOSE')
+      .reduce((acc, o) => acc.plus(toDecimal(o.amount)), toDecimal(0));
 
     return {
       cashBalance: toDecimal(cashbox.balance).toFixed(2),

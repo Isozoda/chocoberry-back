@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestjs/common';import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { SuppliersService } from './suppliers.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
@@ -15,12 +16,12 @@ export class SuppliersController {
   @ApiOperation({ summary: 'List all suppliers' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
-  findAll(
-    @CurrentUser() user: any,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
-    return this.suppliersService.findAll(user.id, page ? parseInt(page) : 1, limit ? parseInt(limit) : 50);
+  findAll(@CurrentUser() user: any, @Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.suppliersService.findAll(
+      user.id,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 50,
+    );
   }
 
   @Post()
@@ -58,13 +59,21 @@ export class SuppliersController {
   @Post(':id/purchase')
   @ApiOperation({ summary: 'Record a purchase from supplier (box→kg auto + cup forecast)' })
   @ApiResponse({ status: 201, description: 'Purchase recorded with forecast' })
-  createPurchase(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: CreatePurchaseDto) {
+  createPurchase(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() dto: CreatePurchaseDto,
+  ) {
     return this.suppliersService.createPurchase(user.id, id, dto);
   }
 
   @Get(':id/purchases')
   @ApiOperation({ summary: 'Get purchases from supplier' })
-  getPurchases(@CurrentUser() user: any, @Param('id') id: string, @Query() filter: FilterPurchasesDto) {
+  getPurchases(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Query() filter: FilterPurchasesDto,
+  ) {
     return this.suppliersService.getPurchases(user.id, id, filter);
   }
 

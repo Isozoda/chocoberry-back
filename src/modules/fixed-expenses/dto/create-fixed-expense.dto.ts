@@ -7,7 +7,10 @@ export class CreateFixedExpenseDto {
   @IsString()
   name: string;
 
-  @ApiProperty({ example: 'electricity', description: 'electricity|water|rent|tax|internet|logistics|cleaning|other' })
+  @ApiProperty({
+    example: 'electricity',
+    description: 'electricity|water|rent|tax|internet|logistics|cleaning|other',
+  })
   @IsString()
   category: string;
 

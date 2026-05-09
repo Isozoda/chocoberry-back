@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { InventoryUnit } from '@prisma/client';
 

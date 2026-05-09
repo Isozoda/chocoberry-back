@@ -4,7 +4,12 @@ export interface AdvisorPromptData {
   netProfit: string;
   topProducts: Array<{ name: string; revenue: string }>;
   lowProducts: Array<{ name: string; revenue: string }>;
-  inventory: Array<{ name: string; currentStock: string; unit: string; daysRemaining: number | null }>;
+  inventory: Array<{
+    name: string;
+    currentStock: string;
+    unit: string;
+    daysRemaining: number | null;
+  }>;
   fixedExpenses: Array<{ name: string; amount: string; period: string }>;
   question?: string;
 }

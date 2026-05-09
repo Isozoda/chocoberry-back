@@ -9,11 +9,7 @@ import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { FilterPurchasesDto } from './dto/filter-purchases.dto';
 import Decimal from 'decimal.js';
-import {
-  toDecimal,
-  multiplyDecimal,
-  calcWeightedAvgCost,
-} from '../../common/utils/decimal.util';
+import { toDecimal, multiplyDecimal, calcWeightedAvgCost } from '../../common/utils/decimal.util';
 import { startOfDay, endOfDay } from '../../common/utils/date.util';
 
 @Injectable()
@@ -48,7 +44,13 @@ export class SuppliersService {
     const b = await this.getBusiness(userId);
     try {
       return await this.prisma.supplier.create({
-        data: { businessId: b.id, name: dto.name, type: dto.type || 'OTHER', phone: dto.phone, notes: dto.notes },
+        data: {
+          businessId: b.id,
+          name: dto.name,
+          type: dto.type || 'OTHER',
+          phone: dto.phone,
+          notes: dto.notes,
+        },
       });
     } catch {
       throw new ConflictException('Supplier with this name already exists');
@@ -71,7 +73,9 @@ export class SuppliersService {
 
   async createPurchase(userId: string, supplierId: string, dto: CreatePurchaseDto) {
     const b = await this.getBusiness(userId);
-    const supplier = await this.prisma.supplier.findFirst({ where: { id: supplierId, businessId: b.id } });
+    const supplier = await this.prisma.supplier.findFirst({
+      where: { id: supplierId, businessId: b.id },
+    });
     if (!supplier) throw new NotFoundException('Supplier not found');
 
     let quantity: Decimal;
@@ -258,7 +262,13 @@ export class SuppliersService {
     });
   }
 
-  async getPriceHistory(userId: string, supplierId: string, itemId?: string, from?: string, to?: string) {
+  async getPriceHistory(
+    userId: string,
+    supplierId: string,
+    itemId?: string,
+    from?: string,
+    to?: string,
+  ) {
     const b = await this.getBusiness(userId);
     const where: any = { supplierId };
     if (itemId) where.inventoryItemId = itemId;

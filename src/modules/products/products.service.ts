@@ -91,7 +91,9 @@ export class ProductsService {
 
   async setRecipe(userId: string, productId: string, dto: SetRecipeDto) {
     const b = await this.getBusiness(userId);
-    const product = await this.prisma.product.findFirst({ where: { id: productId, businessId: b.id } });
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, businessId: b.id },
+    });
     if (!product) throw new NotFoundException('Product not found');
 
     return this.prisma.$transaction(async (tx) => {

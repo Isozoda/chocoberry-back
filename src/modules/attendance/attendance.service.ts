@@ -20,7 +20,9 @@ export class AttendanceService {
     const daysInMonth = dayjs(`${year}-${String(month).padStart(2, '0')}-01`).daysInMonth();
     let count = 0;
     for (let d = 1; d <= daysInMonth; d++) {
-      const dow = dayjs(`${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`).day();
+      const dow = dayjs(
+        `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+      ).day();
       if (dow !== 0) count++;
     }
     return count;
@@ -62,7 +64,9 @@ export class AttendanceService {
       };
     });
 
-    const present = result.filter((r) => r.record?.status === 'PRESENT' || r.record?.status === 'LATE').length;
+    const present = result.filter(
+      (r) => r.record?.status === 'PRESENT' || r.record?.status === 'LATE',
+    ).length;
     const absent = result.filter((r) => r.record?.status === 'ABSENT').length;
 
     return { date, employees: result, present, absent, total: employees.length };
@@ -107,9 +111,8 @@ export class AttendanceService {
       }
 
       const monthlySalary = toDecimal(emp.salary);
-      const dailyRate = workingDaysInMonth > 0
-        ? monthlySalary.dividedBy(workingDaysInMonth)
-        : new Decimal(0);
+      const dailyRate =
+        workingDaysInMonth > 0 ? monthlySalary.dividedBy(workingDaysInMonth) : new Decimal(0);
 
       const workedDays = Object.values(dayMap).filter(
         (d) => d && ['PRESENT', 'LATE', 'DAY_OFF', 'SICK'].includes(d.status),
@@ -140,8 +143,12 @@ export class AttendanceService {
   async getMonthlySummary(userId: string, month: string) {
     const b = await this.getBusiness(userId);
     const { year, month: m } = parseMonth(month);
-    const start = dayjs(`${year}-${String(m).padStart(2, '0')}-01`).startOf('month').toDate();
-    const end = dayjs(`${year}-${String(m).padStart(2, '0')}-01`).endOf('month').toDate();
+    const start = dayjs(`${year}-${String(m).padStart(2, '0')}-01`)
+      .startOf('month')
+      .toDate();
+    const end = dayjs(`${year}-${String(m).padStart(2, '0')}-01`)
+      .endOf('month')
+      .toDate();
 
     const workingDaysInMonth = this.getWorkingDaysInMonth(year, m);
 
@@ -161,9 +168,8 @@ export class AttendanceService {
     const result = employees.map((emp) => {
       const empRecords = records.filter((r) => r.employeeId === emp.id);
       const monthlySalary = toDecimal(emp.salary);
-      const dailyRate = workingDaysInMonth > 0
-        ? monthlySalary.dividedBy(workingDaysInMonth)
-        : new Decimal(0);
+      const dailyRate =
+        workingDaysInMonth > 0 ? monthlySalary.dividedBy(workingDaysInMonth) : new Decimal(0);
 
       const workedDays = empRecords.filter((r) =>
         ['PRESENT', 'LATE', 'DAY_OFF', 'SICK'].includes(r.status),
@@ -233,7 +239,9 @@ export class AttendanceService {
 
   async upsertRecord(userId: string, employeeId: string, dto: UpsertAttendanceDto) {
     const b = await this.getBusiness(userId);
-    const emp = await this.prisma.employee.findFirst({ where: { id: employeeId, businessId: b.id } });
+    const emp = await this.prisma.employee.findFirst({
+      where: { id: employeeId, businessId: b.id },
+    });
     if (!emp) throw new NotFoundException('Employee not found');
 
     const dateObj = dayjs(dto.date).startOf('day').toDate();
@@ -262,7 +270,9 @@ export class AttendanceService {
 
   async deleteRecord(userId: string, employeeId: string, date: string) {
     const b = await this.getBusiness(userId);
-    const emp = await this.prisma.employee.findFirst({ where: { id: employeeId, businessId: b.id } });
+    const emp = await this.prisma.employee.findFirst({
+      where: { id: employeeId, businessId: b.id },
+    });
     if (!emp) throw new NotFoundException('Employee not found');
 
     const dateObj = dayjs(date).startOf('day').toDate();

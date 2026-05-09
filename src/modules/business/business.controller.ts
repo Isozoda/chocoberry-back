@@ -12,7 +12,9 @@ export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}
 
   @Post('setup')
-  @ApiOperation({ summary: 'Set up business and seed all defaults (suppliers, products, inventory, funds)' })
+  @ApiOperation({
+    summary: 'Set up business and seed all defaults (suppliers, products, inventory, funds)',
+  })
   @ApiResponse({ status: 201, description: 'Business created with all defaults seeded' })
   @ApiResponse({ status: 409, description: 'Business already set up' })
   setup(@CurrentUser() user: any, @Body() dto: CreateBusinessDto) {
@@ -48,7 +50,7 @@ export class BusinessController {
   }
 
   @Get('dashboard')
-  @ApiOperation({ summary: 'Get today\'s dashboard summary' })
+  @ApiOperation({ summary: "Get today's dashboard summary" })
   @ApiResponse({ status: 200 })
   async getDashboard(@CurrentUser() user: any) {
     try {

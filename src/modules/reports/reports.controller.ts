@@ -61,7 +61,11 @@ export class ReportsController {
   @ApiOperation({ summary: 'Supplier purchase breakdown' })
   @ApiQuery({ name: 'from', required: false })
   @ApiQuery({ name: 'to', required: false })
-  getSupplierBreakdown(@CurrentUser() user: any, @Query('from') from?: string, @Query('to') to?: string) {
+  getSupplierBreakdown(
+    @CurrentUser() user: any,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
     return this.reportsService.getSupplierBreakdown(user.id, from, to);
   }
 
@@ -93,7 +97,10 @@ export class ReportsController {
     @Query('type') type?: string,
   ) {
     const buffer = await this.reportsService.exportExcel(user.id, from, to, type);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
     res.setHeader('Content-Disposition', `attachment; filename="chocoberry-report.xlsx"`);
     res.send(buffer);
   }

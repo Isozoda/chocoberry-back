@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateDailyReportDto } from './dto/create-daily-report.dto';
 import { toDecimal, addDecimal, maxDecimal } from '../../common/utils/decimal.util';
@@ -28,15 +33,24 @@ export class DailyReportService {
     const extraIncome = toDecimal(dto.extraIncome || 0);
     const totalIncome = totalSales.plus(extraIncome);
 
-    const suppliersTotal = (dto.suppliers || []).reduce((acc, s) => acc.plus(toDecimal(s.amount)), new Decimal(0));
+    const suppliersTotal = (dto.suppliers || []).reduce(
+      (acc, s) => acc.plus(toDecimal(s.amount)),
+      new Decimal(0),
+    );
     const operationalExp = toDecimal(dto.operationalExp || 0);
     const consumablesExp = toDecimal(dto.consumablesExp || 0);
-    const ownerDraws = (dto.draws || []).reduce((acc, d) => acc.plus(toDecimal(d.amount)), new Decimal(0));
+    const ownerDraws = (dto.draws || []).reduce(
+      (acc, d) => acc.plus(toDecimal(d.amount)),
+      new Decimal(0),
+    );
     const inventoryExp = suppliersTotal;
     const totalExpenses = suppliersTotal.plus(operationalExp).plus(consumablesExp).plus(ownerDraws);
 
     const remaining = toDecimal(dto.remaining || 0);
-    const charityAmount = maxDecimal(new Decimal(0), totalIncome.minus(totalExpenses).minus(remaining));
+    const charityAmount = maxDecimal(
+      new Decimal(0),
+      totalIncome.minus(totalExpenses).minus(remaining),
+    );
 
     return this.prisma.$transaction(async (tx) => {
       const report = await tx.dailyReport.create({
@@ -181,7 +195,10 @@ export class DailyReportService {
       totalExpenses: r.totalExpenses,
       charityAmount: r.charityAmount,
       remaining: r.remaining,
-      profit: toDecimal(r.totalIncome).minus(toDecimal(r.totalExpenses)).minus(toDecimal(r.charityAmount)).toFixed(2),
+      profit: toDecimal(r.totalIncome)
+        .minus(toDecimal(r.totalExpenses))
+        .minus(toDecimal(r.charityAmount))
+        .toFixed(2),
       suppliers: r.suppliers,
       ownerDraws: r.draws,
     };

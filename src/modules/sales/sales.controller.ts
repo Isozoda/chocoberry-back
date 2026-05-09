@@ -24,7 +24,7 @@ export class SalesController {
   }
 
   @Get('stats/today')
-  @ApiOperation({ summary: 'Get today\'s sales statistics' })
+  @ApiOperation({ summary: "Get today's sales statistics" })
   getStatsToday(@CurrentUser() user: any) {
     return this.salesService.getStatsToday(user.id);
   }

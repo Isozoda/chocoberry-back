@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { toDecimal } from '../../common/utils/decimal.util';
-import { startOfDay, endOfDay, startOfMonth, endOfMonth, parseMonth } from '../../common/utils/date.util';
+import {
+  startOfDay,
+  endOfDay,
+  startOfMonth,
+  endOfMonth,
+  parseMonth,
+} from '../../common/utils/date.util';
 import Decimal from 'decimal.js';
 import * as ExcelJS from 'exceljs';
 import PDFDocument = require('pdfkit');
@@ -52,7 +58,9 @@ export class ReportsService {
       totalIncome: totalIncome.toFixed(2),
       totalExpenses: totalExpenses.toFixed(2),
       netProfit: netProfit.toFixed(2),
-      profitMargin: totalIncome.isZero() ? '0.00' : netProfit.dividedBy(totalIncome).times(100).toFixed(2),
+      profitMargin: totalIncome.isZero()
+        ? '0.00'
+        : netProfit.dividedBy(totalIncome).times(100).toFixed(2),
       expenseBreakdown,
     };
   }
@@ -98,7 +106,9 @@ export class ReportsService {
       totalSales: totalSales.toFixed(2),
       totalCogs: totalCogs.toFixed(2),
       grossProfit: grossProfit.toFixed(2),
-      grossMargin: totalSales.isZero() ? '0.00' : grossProfit.dividedBy(totalSales).times(100).toFixed(2),
+      grossMargin: totalSales.isZero()
+        ? '0.00'
+        : grossProfit.dividedBy(totalSales).times(100).toFixed(2),
     };
   }
 
@@ -124,7 +134,10 @@ export class ReportsService {
     ]);
 
     const totalSales = sales.reduce((acc, s) => acc.plus(toDecimal(s.total)), new Decimal(0));
-    const totalExpenses = expenses.reduce((acc, e) => acc.plus(toDecimal(e.amount)), new Decimal(0));
+    const totalExpenses = expenses.reduce(
+      (acc, e) => acc.plus(toDecimal(e.amount)),
+      new Decimal(0),
+    );
 
     return {
       date: targetDate,
@@ -258,7 +271,8 @@ export class ReportsService {
     });
 
     const byEmployee = payments.reduce((acc: any, p) => {
-      if (!acc[p.employeeId]) acc[p.employeeId] = { employee: p.employee, payments: [], total: new Decimal(0) };
+      if (!acc[p.employeeId])
+        acc[p.employeeId] = { employee: p.employee, payments: [], total: new Decimal(0) };
       acc[p.employeeId].payments.push(p);
       acc[p.employeeId].total = acc[p.employeeId].total.plus(toDecimal(p.amount));
       return acc;
@@ -266,13 +280,18 @@ export class ReportsService {
 
     return {
       month,
-      totalPayroll: (Object.values(byEmployee) as any[]).reduce((sum: Decimal, e: any) => sum.plus(e.total), new Decimal(0)).toFixed(2),
+      totalPayroll: (Object.values(byEmployee) as any[])
+        .reduce((sum: Decimal, e: any) => sum.plus(e.total), new Decimal(0))
+        .toFixed(2),
       employees: Object.values(byEmployee).map((e: any) => {
-        const byType = e.payments.reduce((acc: any, p: any) => {
-          const key = p.paymentType as string;
-          acc[key] = (acc[key] || new Decimal(0)).plus(toDecimal(p.amount));
-          return acc;
-        }, {} as Record<string, Decimal>);
+        const byType = e.payments.reduce(
+          (acc: any, p: any) => {
+            const key = p.paymentType as string;
+            acc[key] = (acc[key] || new Decimal(0)).plus(toDecimal(p.amount));
+            return acc;
+          },
+          {} as Record<string, Decimal>,
+        );
         return {
           employeeId: e.employee.id,
           name: e.employee.name,

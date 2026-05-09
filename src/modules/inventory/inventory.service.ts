@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateItemDto } from './dto/create-item.dto';
 import { StockInDto } from './dto/stock-in.dto';
@@ -20,10 +25,20 @@ export class InventoryService {
     try {
       const item = await this.prisma.inventoryItem.findUnique({ where: { id: itemId } });
       if (!item) return;
-      if (stockAfter.lessThanOrEqualTo(toDecimal(item.minStockLevel)) && toDecimal(item.minStockLevel).greaterThan(0)) {
+      if (
+        stockAfter.lessThanOrEqualTo(toDecimal(item.minStockLevel)) &&
+        toDecimal(item.minStockLevel).greaterThan(0)
+      ) {
         await this.telegramService.notifyLowStock({
           businessId,
-          items: [{ name: item.name, currentStock: stockAfter.toFixed(2), minStockLevel: item.minStockLevel.toString(), unit: item.unit }],
+          items: [
+            {
+              name: item.name,
+              currentStock: stockAfter.toFixed(2),
+              minStockLevel: item.minStockLevel.toString(),
+              unit: item.unit,
+            },
+          ],
         });
       }
     } catch {
@@ -97,7 +112,9 @@ export class InventoryService {
         ...(dto.unit && { unit: dto.unit }),
         ...(dto.minStockLevel !== undefined && { minStockLevel: toDecimal(dto.minStockLevel) }),
         ...(dto.category !== undefined && { category: dto.category }),
-        ...(dto.cleaningLossPct !== undefined && { cleaningLossPct: toDecimal(dto.cleaningLossPct) }),
+        ...(dto.cleaningLossPct !== undefined && {
+          cleaningLossPct: toDecimal(dto.cleaningLossPct),
+        }),
       },
     });
   }
@@ -120,7 +137,10 @@ export class InventoryService {
     const stockAfter = stockBefore.plus(qty);
 
     return this.prisma.$transaction(async (tx) => {
-      await tx.inventoryItem.update({ where: { id: itemId }, data: { currentStock: stockAfter, avgCost: newAvgCost } });
+      await tx.inventoryItem.update({
+        where: { id: itemId },
+        data: { currentStock: stockAfter, avgCost: newAvgCost },
+      });
       return tx.inventoryTransaction.create({
         data: {
           businessId: b.id,
@@ -143,7 +163,9 @@ export class InventoryService {
     const item = await this.getItem(b.id, itemId);
     const qty = toDecimal(dto.quantity);
     if (toDecimal(item.currentStock).lessThan(qty)) {
-      throw new ConflictException(`Insufficient stock for ${item.name}. Available: ${item.currentStock}`);
+      throw new ConflictException(
+        `Insufficient stock for ${item.name}. Available: ${item.currentStock}`,
+      );
     }
     const stockBefore = toDecimal(item.currentStock);
     const stockAfter = stockBefore.minus(qty);
@@ -246,7 +268,9 @@ export class InventoryService {
 
     const rawQty = toDecimal(dto.rawQuantity);
     if (toDecimal(item.currentStock).lessThan(rawQty)) {
-      throw new ConflictException(`Insufficient stock for cleaning. Available: ${item.currentStock}`);
+      throw new ConflictException(
+        `Insufficient stock for cleaning. Available: ${item.currentStock}`,
+      );
     }
 
     const lossPct = toDecimal(item.cleaningLossPct);
@@ -265,7 +289,10 @@ export class InventoryService {
     const unitCost = toDecimal(item.avgCost);
 
     const result = await this.prisma.$transaction(async (tx) => {
-      await tx.inventoryItem.update({ where: { id: itemId }, data: { currentStock: stockAfterCleanIn } });
+      await tx.inventoryItem.update({
+        where: { id: itemId },
+        data: { currentStock: stockAfterCleanIn },
+      });
 
       const outTx = await tx.inventoryTransaction.create({
         data: {
@@ -334,7 +361,9 @@ export class InventoryService {
     const items = await this.prisma.inventoryItem.findMany({
       where: { businessId: b.id, isActive: true },
     });
-    return items.filter((item) => toDecimal(item.currentStock).lessThanOrEqualTo(toDecimal(item.minStockLevel)));
+    return items.filter((item) =>
+      toDecimal(item.currentStock).lessThanOrEqualTo(toDecimal(item.minStockLevel)),
+    );
   }
 
   async getValuation(userId: string) {
@@ -346,7 +375,13 @@ export class InventoryService {
     const details = items.map((item) => {
       const value = multiplyDecimal(item.currentStock, item.avgCost);
       total = total.plus(value);
-      return { id: item.id, name: item.name, stock: item.currentStock, avgCost: item.avgCost, value: value.toFixed(2) };
+      return {
+        id: item.id,
+        name: item.name,
+        stock: item.currentStock,
+        avgCost: item.avgCost,
+        value: value.toFixed(2),
+      };
     });
     return { totalValue: total.toFixed(2), items: details };
   }

@@ -7,7 +7,10 @@ export class CalcPayrollDto {
   @Matches(/^\d{4}-\d{2}$/)
   month: string;
 
-  @ApiPropertyOptional({ example: false, description: 'If true, creates payment records immediately' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'If true, creates payment records immediately',
+  })
   @IsOptional()
   @IsBoolean()
   applyImmediately?: boolean;

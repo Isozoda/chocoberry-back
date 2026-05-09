@@ -53,8 +53,12 @@ export class FixedExpensesService {
     };
 
     const all = await this.prisma.fixedExpense.findMany({ where });
-    const totalPaid = all.filter((e) => e.isPaid).reduce((s, e) => s + toDecimal(e.amount).toNumber(), 0);
-    const totalPending = all.filter((e) => !e.isPaid).reduce((s, e) => s + toDecimal(e.amount).toNumber(), 0);
+    const totalPaid = all
+      .filter((e) => e.isPaid)
+      .reduce((s, e) => s + toDecimal(e.amount).toNumber(), 0);
+    const totalPending = all
+      .filter((e) => !e.isPaid)
+      .reduce((s, e) => s + toDecimal(e.amount).toNumber(), 0);
 
     return {
       totalPaid: toDecimal(totalPaid).toFixed(2),

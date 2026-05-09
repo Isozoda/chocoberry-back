@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsDateString, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class SupplierLineDto {

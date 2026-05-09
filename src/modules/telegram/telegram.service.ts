@@ -15,7 +15,11 @@ interface BulkDeductItem {
 
 // unit strings from bot parser → Prisma InventoryUnit enum
 const PARSER_UNIT_TO_ENUM: Record<string, string> = {
-  'кг': 'KG', 'г': 'GRAM', 'шт': 'PIECE', 'л': 'LITER', 'мл': 'ML',
+  кг: 'KG',
+  г: 'GRAM',
+  шт: 'PIECE',
+  л: 'LITER',
+  мл: 'ML',
 };
 
 function normalizeQtyToItemUnit(qty: number, parsedUnit: string, itemUnit: string): number {
@@ -48,10 +52,7 @@ export class TelegramService {
   }
 
   generateConnectToken(userId: string): string {
-    return this.jwtService.sign(
-      { sub: userId, purpose: 'telegram-connect' },
-      { expiresIn: '15m' },
-    );
+    return this.jwtService.sign({ sub: userId, purpose: 'telegram-connect' }, { expiresIn: '15m' });
   }
 
   async getConnectLink(userId: string): Promise<{ url: string; token: string }> {
@@ -80,7 +81,10 @@ export class TelegramService {
       },
     });
 
-    await this.sendMessage(dto.chatId, '✅ Telegram бо MoneyMind пайваст шуд!\n\nАкнун шумо огоҳиҳоро хоҳед дид:\n• 📦 Захираи кам\n• 📊 Ҳисоботи рӯзона\n• 💰 Фурӯши нав');
+    await this.sendMessage(
+      dto.chatId,
+      '✅ Telegram бо MoneyMind пайваст шуд!\n\nАкнун шумо огоҳиҳоро хоҳед дид:\n• 📦 Захираи кам\n• 📊 Ҳисоботи рӯзона\n• 💰 Фурӯши нав',
+    );
     this.logger.log(`User ${payload.sub} linked chatId ${dto.chatId}`);
     return { ok: true };
   }
@@ -197,7 +201,15 @@ export class TelegramService {
 
     const items = await this.prisma.inventoryItem.findMany({
       where: { businessId: business.id, isActive: true },
-      select: { id: true, name: true, nameRu: true, nameTg: true, unit: true, currentStock: true, minStockLevel: true },
+      select: {
+        id: true,
+        name: true,
+        nameRu: true,
+        nameTg: true,
+        unit: true,
+        currentStock: true,
+        minStockLevel: true,
+      },
       orderBy: { name: 'asc' },
     });
 
@@ -214,9 +226,14 @@ export class TelegramService {
     if (!business) throw new NotFoundException('Business not found');
 
     const results: Array<{
-      id: string; name: string; unit: string;
-      stockBefore: string; stockAfter: string;
-      quantity: string; isLow: boolean; minStockLevel: string;
+      id: string;
+      name: string;
+      unit: string;
+      stockBefore: string;
+      stockAfter: string;
+      quantity: string;
+      isLow: boolean;
+      minStockLevel: string;
     }> = [];
     const warnings: Array<{ itemId: string; error: string }> = [];
 
@@ -235,7 +252,10 @@ export class TelegramService {
       const stockBefore = toDecimal(invItem.currentStock);
 
       if (stockBefore.lessThan(qty)) {
-        warnings.push({ itemId: req.itemId, error: `${invItem.name}: захира кам аст (${stockBefore.toFixed(2)})` });
+        warnings.push({
+          itemId: req.itemId,
+          error: `${invItem.name}: захира кам аст (${stockBefore.toFixed(2)})`,
+        });
         continue;
       }
 
@@ -243,7 +263,10 @@ export class TelegramService {
 
       try {
         await this.prisma.$transaction(async (tx) => {
-          await tx.inventoryItem.update({ where: { id: invItem.id }, data: { currentStock: stockAfter } });
+          await tx.inventoryItem.update({
+            where: { id: invItem.id },
+            data: { currentStock: stockAfter },
+          });
           await tx.inventoryTransaction.create({
             data: {
               businessId: business.id,
@@ -266,7 +289,14 @@ export class TelegramService {
         if (isLow) {
           await this.notifyLowStock({
             businessId: business.id,
-            items: [{ name: invItem.name, currentStock: stockAfter.toFixed(2), minStockLevel: invItem.minStockLevel.toString(), unit: invItem.unit }],
+            items: [
+              {
+                name: invItem.name,
+                currentStock: stockAfter.toFixed(2),
+                minStockLevel: invItem.minStockLevel.toString(),
+                unit: invItem.unit,
+              },
+            ],
           }).catch(() => {});
         }
 
@@ -296,7 +326,11 @@ export class TelegramService {
     totalExpenses: number;
     items: Array<{ name: string; amount: number; category: string }>;
   }> {
-    const lines = rawText.trim().split('\n').map((l) => l.trim()).filter(Boolean);
+    const lines = rawText
+      .trim()
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
 
     let date: string | null = null;
     let openingBalance = 0;
@@ -304,12 +338,20 @@ export class TelegramService {
     const items: Array<{ name: string; amount: number; category: string }> = [];
 
     const autoCategories: Record<string, string> = {
-      'ашан': 'shopping', 'сиёма': 'shopping',
-      'клубника': 'ingredients', 'шоколад': 'ingredients', 'намк': 'ingredients',
-      'банан': 'ingredients', 'сливки': 'ingredients',
-      'баҳрулло': 'salary', 'дилшод': 'salary', 'саф': 'salary',
-      'трайфл': 'production', 'дом печат': 'other',
-      'масрафҳо': 'misc', 'масрафхо': 'misc',
+      ашан: 'shopping',
+      сиёма: 'shopping',
+      клубника: 'ingredients',
+      шоколад: 'ingredients',
+      намк: 'ingredients',
+      банан: 'ingredients',
+      сливки: 'ingredients',
+      баҳрулло: 'salary',
+      дилшод: 'salary',
+      саф: 'salary',
+      трайфл: 'production',
+      'дом печат': 'other',
+      масрафҳо: 'misc',
+      масрафхо: 'misc',
     };
 
     for (const line of lines) {
@@ -348,9 +390,10 @@ export class TelegramService {
       }
     }
 
-    const totalExpenses = openingBalance > 0 && closingBalance > 0
-      ? openingBalance - closingBalance
-      : items.reduce((s, i) => s + i.amount, 0);
+    const totalExpenses =
+      openingBalance > 0 && closingBalance > 0
+        ? openingBalance - closingBalance
+        : items.reduce((s, i) => s + i.amount, 0);
 
     return { date, openingBalance, closingBalance, totalExpenses, items };
   }
@@ -454,12 +497,17 @@ export class TelegramService {
 
       if (dueSoon.length === 0) continue;
 
-      const lines = dueSoon.map((e) => {
-        const dueStr = e.dueDate.toLocaleDateString('ru-RU');
-        return `• ${e.name}: ${Number(e.amount).toLocaleString()} ${e.currency} (${dueStr})`;
-      }).join('\n');
+      const lines = dueSoon
+        .map((e) => {
+          const dueStr = e.dueDate.toLocaleDateString('ru-RU');
+          return `• ${e.name}: ${Number(e.amount).toLocaleString()} ${e.currency} (${dueStr})`;
+        })
+        .join('\n');
 
-      const daysLeft = Math.max(1, Math.ceil((dueSoon[0].dueDate.getTime() - now.getTime()) / 86400000));
+      const daysLeft = Math.max(
+        1,
+        Math.ceil((dueSoon[0].dueDate.getTime() - now.getTime()) / 86400000),
+      );
       const text =
         `⚠️ *Огоҳии хароҷот*\n\n` +
         `Хароҷоти зерин ҳанӯз пардохта нашудааст:\n${lines}\n\n` +
@@ -469,7 +517,11 @@ export class TelegramService {
     }
   }
 
-  async sendMessage(chatId: string, text: string, extra: Record<string, unknown> = {}): Promise<void> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    extra: Record<string, unknown> = {},
+  ): Promise<void> {
     if (!this.botToken) {
       this.logger.warn('TELEGRAM_BOT_TOKEN not set — skipping sendMessage');
       return;

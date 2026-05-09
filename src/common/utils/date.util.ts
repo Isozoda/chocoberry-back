@@ -9,11 +9,15 @@ export function endOfDay(date: Date | string): Date {
 }
 
 export function startOfMonth(year: number, month: number): Date {
-  return dayjs(`${year}-${String(month).padStart(2, '0')}-01`).startOf('month').toDate();
+  return dayjs(`${year}-${String(month).padStart(2, '0')}-01`)
+    .startOf('month')
+    .toDate();
 }
 
 export function endOfMonth(year: number, month: number): Date {
-  return dayjs(`${year}-${String(month).padStart(2, '0')}-01`).endOf('month').toDate();
+  return dayjs(`${year}-${String(month).padStart(2, '0')}-01`)
+    .endOf('month')
+    .toDate();
 }
 
 export function formatDate(date: Date): string {

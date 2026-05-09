@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { FilterSalesDto } from './dto/filter-sales.dto';
@@ -95,7 +102,8 @@ export class SalesService {
             include: { recipe: { include: { inventoryItem: true } } },
           });
           if (!product) throw new NotFoundException(`Product ${item.productId} not found`);
-          if (!product.isActive) throw new BadRequestException(`Product ${product.name} is not active`);
+          if (!product.isActive)
+            throw new BadRequestException(`Product ${product.name} is not active`);
 
           name = product.name;
           unitPrice = item.unitPrice != null ? toDecimal(item.unitPrice) : toDecimal(product.price);
@@ -104,17 +112,23 @@ export class SalesService {
           for (const r of product.recipe) {
             const needed = multiplyDecimal(r.quantity, qty);
             const invItem = await tx.inventoryItem.findUnique({ where: { id: r.inventoryItemId } });
-            if (!invItem) throw new NotFoundException(`Inventory item ${r.inventoryItemId} not found`);
+            if (!invItem)
+              throw new NotFoundException(`Inventory item ${r.inventoryItemId} not found`);
             if (toDecimal(invItem.currentStock).lessThan(needed)) {
               throw new ConflictException(
                 `Не хватает: ${invItem.name}. Нужно: ${needed.toFixed(4)}, есть: ${invItem.currentStock}`,
               );
             }
             cost = cost.plus(multiplyDecimal(needed, invItem.avgCost));
-            recipe.push({ inventoryItemId: r.inventoryItemId, qty: needed, itemName: invItem.name });
+            recipe.push({
+              inventoryItemId: r.inventoryItemId,
+              qty: needed,
+              itemName: invItem.name,
+            });
           }
         } else {
-          if (!item.name) throw new BadRequestException('name required when productId is not provided');
+          if (!item.name)
+            throw new BadRequestException('name required when productId is not provided');
           unitPrice = item.unitPrice != null ? toDecimal(item.unitPrice) : new Decimal(0);
         }
 
@@ -122,7 +136,15 @@ export class SalesService {
         subtotal = subtotal.plus(lineTotal);
         totalCost = totalCost.plus(cost);
 
-        resolvedItems.push({ productId: item.productId, name, quantity: qty, unitPrice, cost, total: lineTotal, recipe });
+        resolvedItems.push({
+          productId: item.productId,
+          name,
+          quantity: qty,
+          unitPrice,
+          cost,
+          total: lineTotal,
+          recipe,
+        });
       }
 
       const total = subtotal.minus(discount).plus(tax);
@@ -183,7 +205,10 @@ export class SalesService {
           const invItem = await tx.inventoryItem.findUnique({ where: { id: r.inventoryItemId } });
           const stockBefore = toDecimal(invItem.currentStock);
           const stockAfter = stockBefore.minus(r.qty);
-          await tx.inventoryItem.update({ where: { id: r.inventoryItemId }, data: { currentStock: stockAfter } });
+          await tx.inventoryItem.update({
+            where: { id: r.inventoryItemId },
+            data: { currentStock: stockAfter },
+          });
           await tx.inventoryTransaction.create({
             data: {
               businessId: b.id,
@@ -265,7 +290,11 @@ export class SalesService {
         _count: true,
       }),
       this.prisma.sale.aggregate({
-        where: { businessId: b.id, date: { gte: yesterdayStart, lte: yesterdayEnd }, status: 'COMPLETED' },
+        where: {
+          businessId: b.id,
+          date: { gte: yesterdayStart, lte: yesterdayEnd },
+          status: 'COMPLETED',
+        },
         _sum: { total: true },
       }),
     ]);
@@ -274,7 +303,12 @@ export class SalesService {
     const totalYesterday = toDecimal(yesterdayStats._sum.total || 0);
     let vsYesterday = 0;
     if (totalYesterday.greaterThan(0)) {
-      vsYesterday = totalToday.minus(totalYesterday).dividedBy(totalYesterday).times(100).toDecimalPlaces(1).toNumber();
+      vsYesterday = totalToday
+        .minus(totalYesterday)
+        .dividedBy(totalYesterday)
+        .times(100)
+        .toDecimalPlaces(1)
+        .toNumber();
     } else if (totalToday.greaterThan(0)) {
       vsYesterday = 100;
     }

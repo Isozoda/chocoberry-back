@@ -39,7 +39,10 @@ export class ExpensesService {
 
   async findOne(userId: string, id: string) {
     const b = await this.getBusiness(userId);
-    const e = await this.prisma.expense.findFirst({ where: { id, businessId: b.id }, include: { category: true, employee: true } });
+    const e = await this.prisma.expense.findFirst({
+      where: { id, businessId: b.id },
+      include: { category: true, employee: true },
+    });
     if (!e) throw new NotFoundException('Expense not found');
     return e;
   }
@@ -76,7 +79,10 @@ export class ExpensesService {
       const cashbox = await tx.cashbox.findUnique({ where: { businessId: b.id } });
       if (cashbox && dto.paymentMethod !== 'CARD') {
         const newBalance = toDecimal(cashbox.balance).minus(toDecimal(dto.amount));
-        await tx.cashbox.update({ where: { businessId: b.id }, data: { balance: newBalance, lastUpdated: new Date() } });
+        await tx.cashbox.update({
+          where: { businessId: b.id },
+          data: { balance: newBalance, lastUpdated: new Date() },
+        });
         await tx.cashboxOperation.create({
           data: {
             cashboxId: cashbox.id,

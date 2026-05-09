@@ -29,11 +29,17 @@ export class DailyReportController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.dailyReportService.findAll(user.id, from, to, page ? parseInt(page) : 1, limit ? parseInt(limit) : 30);
+    return this.dailyReportService.findAll(
+      user.id,
+      from,
+      to,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 30,
+    );
   }
 
   @Get('today')
-  @ApiOperation({ summary: 'Get today\'s report (auto-computed from actual data if not created)' })
+  @ApiOperation({ summary: "Get today's report (auto-computed from actual data if not created)" })
   getToday(@CurrentUser() user: any) {
     return this.dailyReportService.getToday(user.id);
   }

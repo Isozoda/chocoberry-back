@@ -18,7 +18,7 @@ export class AuthService {
 
     // If it's the first user, make them an OWNER
     const userCount = await this.prisma.user.count();
-    const role = userCount === 0 ? 'OWNER' : (dto.role || 'STAFF');
+    const role = userCount === 0 ? 'OWNER' : dto.role || 'STAFF';
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.prisma.user.create({

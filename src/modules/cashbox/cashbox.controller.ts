@@ -23,7 +23,7 @@ export class CashboxController {
     // For now, let's assume the frontend sends a type that we can map.
     // The frontend CashboxOperationDto has 'CASH_IN' | 'CASH_OUT' | ...
     if (dto.type === 'CASH_IN') return this.cashboxService.cashIn(user.id, dto);
-    if (dto.type  === 'CASH_OUT') return this.cashboxService.cashOut(user.id, dto);
+    if (dto.type === 'CASH_OUT') return this.cashboxService.cashOut(user.id, dto);
     return this.cashboxService.cashIn(user.id, dto);
   }
 
@@ -40,7 +40,7 @@ export class CashboxController {
   }
 
   @Get('today')
-  @ApiOperation({ summary: 'Get today\'s cashbox report' })
+  @ApiOperation({ summary: "Get today's cashbox report" })
   getToday(@CurrentUser() user: any) {
     return this.cashboxService.getTodayReport(user.id);
   }
@@ -52,6 +52,10 @@ export class CashboxController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.cashboxService.getHistory(user.id, page ? parseInt(page) : 1, limit ? parseInt(limit) : 50);
+    return this.cashboxService.getHistory(
+      user.id,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 50,
+    );
   }
 }

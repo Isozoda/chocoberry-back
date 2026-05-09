@@ -23,7 +23,10 @@ export class CreatePurchaseDto {
   @Min(0)
   kgPerBox?: number;
 
-  @ApiPropertyOptional({ example: 200, description: 'Direct quantity (if not using box calculation)' })
+  @ApiPropertyOptional({
+    example: 200,
+    description: 'Direct quantity (if not using box calculation)',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()

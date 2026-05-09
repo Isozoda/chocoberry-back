@@ -16,10 +16,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       await this.$connect();
       this.logger.log('✅ Database connected successfully');
     } catch (error) {
-      this.logger.error('❌ Could not connect to database. Please make sure PostgreSQL is running on port 5432.');
+      this.logger.error(
+        '❌ Could not connect to database. Please make sure PostgreSQL is running on port 5432.',
+      );
       this.logger.error(`Connection Error: ${error.message}`);
       // In development, we might want to let the app start anyway or exit
-      // process.exit(1); 
+      // process.exit(1);
     }
   }
 
