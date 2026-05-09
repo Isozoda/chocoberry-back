@@ -1,0 +1,611 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ────────────────────────────────────────────────────────────
+enum Role {
+  OWNER
+  STAFF
+  ADMIN
+  ACCOUNTANT
+}
+
+enum BusinessType {
+  FOOD
+  RETAIL
+  SERVICE
+  OTHER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum ExpenseType {
+  FIXED
+  VARIABLE
+  PAYROLL
+  OWNER_DRAW
+  CONSUMABLE
+  COGS
+  WASTE
+  FUND
+  OTHER
+}
+
+enum InventoryUnit {
+  KG
+  GRAM
+  LITER
+  ML
+  PIECE
+  BOX
+  PACK
+  BLOCK
+  DOZEN
+  TON
+}
+
+enum StockMovement {
+  IN
+  OUT
+  ADJUSTMENT
+  WASTE
+  CLEANING_LOSS
+  TRANSFER
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+  MIXED
+}
+
+enum SaleStatus {
+  COMPLETED
+  REFUNDED
+  VOID
+}
+
+enum SalaryType {
+  MONTHLY
+  DAILY
+  HOURLY
+}
+
+enum PaymentType {
+  SALARY
+  ADVANCE
+  BONUS
+  LUNCH
+  FINE
+  OWNER_DRAW
+  OTHER
+}
+
+enum CashboxOpType {
+  IN
+  OUT
+  OPEN
+  CLOSE
+  ADJUSTMENT
+}
+
+enum SupplierType {
+  FRUIT
+  CHOCOLATE
+  PACKAGING
+  OTHER
+}
+
+enum FundType {
+  CHARITY
+  RESERVE
+  RENOVATION
+  EMERGENCY
+  TAX_RESERVE
+  OTHER
+}
+
+enum CupType {
+  CUP_300_ML
+  CUP_400_ML
+  CUP_80SM
+  CUP_90SM
+  CUP_ICE_CREAM
+  OTHER
+}
+
+// ─── USER & BUSINESS ──────────────────────────────────────────────────
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(STAFF)
+  currency     String   @default("TJS")
+  language     String   @default("tg")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  business     Business?
+  employees    Employee[]
+  dailyReports DailyReport[]
+}
+
+model Business {
+  id           String       @id @default(uuid())
+  userId       String       @unique
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  type         BusinessType @default(FOOD)
+  address      String?
+  phone        String?
+  currency     String       @default("TJS")
+  bonusPercent Decimal      @default(2.0) @db.Decimal(5, 2)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  products          Product[]
+  inventoryItems    InventoryItem[]
+  inventoryTxs      InventoryTransaction[]
+  sales             Sale[]
+  expenses          Expense[]
+  transactions      FinancialTransaction[]
+  employees         Employee[]
+  cashbox           Cashbox?
+  dailyReports      DailyReport[]
+  categories        Category[]
+  suppliers         Supplier[]
+  supplierPurchases SupplierPurchase[]
+  funds             Fund[]
+  fundTxs           FundTransaction[]
+  fines             Fine[]
+}
+
+// ─── SUPPLIERS ────────────────────────────────────────────────────────
+model Supplier {
+  id         String       @id @default(uuid())
+  businessId String
+  business   Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  type       SupplierType @default(FRUIT)
+  phone      String?
+  notes      String?
+  isActive   Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  purchases SupplierPurchase[]
+  prices    SupplierPriceHistory[]
+
+  @@unique([businessId, name])
+  @@index([businessId, type])
+}
+
+model SupplierPriceHistory {
+  id              String        @id @default(uuid())
+  supplierId      String
+  supplier        Supplier      @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  inventoryItemId String
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  date            DateTime      @db.Date
+  pricePerUnit    Decimal       @db.Decimal(12, 4)
+
+  @@unique([supplierId, inventoryItemId, date])
+  @@index([inventoryItemId, date])
+}
+
+model SupplierPurchase {
+  id               String         @id @default(uuid())
+  businessId       String
+  business         Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  supplierId       String
+  supplier         Supplier       @relation(fields: [supplierId], references: [id])
+  inventoryItemId  String?
+  inventoryItem    InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+  quantity         Decimal        @db.Decimal(12, 4)
+  unit             InventoryUnit
+  pricePerUnit     Decimal        @db.Decimal(12, 4)
+  totalAmount      Decimal        @db.Decimal(12, 2)
+  boxCount         Int?
+  kgPerBox         Decimal?       @db.Decimal(8, 2)
+  forecastCupsBy03 Int?
+  forecastCupsBy04 Int?
+  notes            String?
+  date             DateTime       @default(now())
+  createdAt        DateTime       @default(now())
+
+  inventoryTxId String?               @unique
+  inventoryTx   InventoryTransaction? @relation(fields: [inventoryTxId], references: [id])
+
+  @@index([businessId, date])
+  @@index([supplierId, date])
+}
+
+// ─── CATEGORIES ───────────────────────────────────────────────────────
+model Category {
+  id          String          @id @default(uuid())
+  businessId  String
+  business    Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
+  nameRu      String?
+  nameTg      String?
+  type        TransactionType
+  expenseType ExpenseType?
+  icon        String?
+  color       String?
+  isDefault   Boolean         @default(false)
+
+  expenses Expense[]
+
+  @@unique([businessId, name])
+}
+
+// ─── PRODUCTS ─────────────────────────────────────────────────────────
+model Product {
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  nameRu     String?
+  nameTg     String?
+  cupType    CupType?
+  variant    String?
+  price      Decimal  @db.Decimal(10, 2)
+  cost       Decimal  @default(0) @db.Decimal(10, 2)
+  unit       String   @default("piece")
+  category   String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  saleItems SaleItem[]
+  recipe    ProductRecipe[]
+
+  @@unique([businessId, name])
+  @@index([businessId, cupType])
+}
+
+model ProductRecipe {
+  id              String        @id @default(uuid())
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventoryItemId String
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  quantity        Decimal       @db.Decimal(10, 4)
+  unit            InventoryUnit
+  notes           String?
+
+  @@unique([productId, inventoryItemId])
+}
+
+// ─── INVENTORY ────────────────────────────────────────────────────────
+model InventoryItem {
+  id              String        @id @default(uuid())
+  businessId      String
+  business        Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name            String
+  nameRu          String?
+  nameTg          String?
+  unit            InventoryUnit @default(PIECE)
+  currentStock    Decimal       @default(0) @db.Decimal(14, 4)
+  minStockLevel   Decimal       @default(0) @db.Decimal(14, 4)
+  avgCost         Decimal       @default(0) @db.Decimal(14, 4)
+  category        String?
+  cleaningLossPct Decimal       @default(0) @db.Decimal(5, 2)
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  transactions InventoryTransaction[]
+  recipes      ProductRecipe[]
+  purchases    SupplierPurchase[]
+  priceHistory SupplierPriceHistory[]
+
+  @@unique([businessId, name])
+  @@index([businessId, category])
+}
+
+model InventoryTransaction {
+  id              String        @id @default(uuid())
+  businessId      String
+  business        Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  inventoryItemId String
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  type            StockMovement
+  quantity        Decimal       @db.Decimal(14, 4)
+  unitCost        Decimal       @db.Decimal(14, 4)
+  totalCost       Decimal       @db.Decimal(14, 4)
+  stockBefore     Decimal       @db.Decimal(14, 4)
+  stockAfter      Decimal       @db.Decimal(14, 4)
+  reason          String?
+  notes           String?
+  expenseId       String?       @unique
+  expense         Expense?      @relation(fields: [expenseId], references: [id])
+  saleId          String?
+  date            DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+
+  supplierPurchase SupplierPurchase?
+
+  @@index([businessId, date])
+  @@index([inventoryItemId, date])
+  @@index([businessId, type])
+}
+
+// ─── SALES (POS) ──────────────────────────────────────────────────────
+model Sale {
+  id            String        @id @default(uuid())
+  businessId    String
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  saleNumber    String
+  items         SaleItem[]
+  subtotal      Decimal       @db.Decimal(12, 2)
+  discount      Decimal       @default(0) @db.Decimal(12, 2)
+  tax           Decimal       @default(0) @db.Decimal(12, 2)
+  total         Decimal       @db.Decimal(12, 2)
+  paymentMethod PaymentMethod @default(CASH)
+  cashAmount    Decimal       @default(0) @db.Decimal(12, 2)
+  cardAmount    Decimal       @default(0) @db.Decimal(12, 2)
+  status        SaleStatus    @default(COMPLETED)
+  employeeId    String?
+  notes         String?
+  date          DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+
+  @@index([businessId, date])
+  @@index([businessId, status])
+}
+
+model SaleItem {
+  id        String   @id @default(uuid())
+  saleId    String
+  sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  name      String
+  quantity  Decimal  @db.Decimal(10, 2)
+  unitPrice Decimal  @db.Decimal(10, 2)
+  cost      Decimal  @default(0) @db.Decimal(10, 2)
+  total     Decimal  @db.Decimal(12, 2)
+}
+
+// ─── EXPENSES ─────────────────────────────────────────────────────────
+model Expense {
+  id            String        @id @default(uuid())
+  businessId    String
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  categoryId    String?
+  category      Category?     @relation(fields: [categoryId], references: [id])
+  expenseType   ExpenseType   @default(VARIABLE)
+  amount        Decimal       @db.Decimal(12, 2)
+  description   String?
+  vendor        String?
+  employeeId    String?
+  employee      Employee?     @relation(fields: [employeeId], references: [id])
+  paymentMethod PaymentMethod @default(CASH)
+  isPaid        Boolean       @default(true)
+  date          DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  inventoryTx InventoryTransaction?
+  employeePay EmployeePayment?
+}
+
+// ─── FINANCIAL LEDGER ─────────────────────────────────────────────────
+model FinancialTransaction {
+  id          String          @id @default(uuid())
+  businessId  String
+  business    Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  type        TransactionType
+  amount      Decimal         @db.Decimal(12, 2)
+  description String?
+  referenceId String?
+  refType     String?
+  date        DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+
+  @@index([businessId, date])
+  @@index([businessId, type])
+}
+
+// ─── EMPLOYEES ────────────────────────────────────────────────────────
+model Employee {
+  id                String     @id @default(uuid())
+  businessId        String
+  business          Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId            String?
+  user              User?      @relation(fields: [userId], references: [id])
+  name              String
+  role              String
+  isOwner           Boolean    @default(false)
+  isConsumableBuyer Boolean    @default(false)
+  phone             String?
+  salary            Decimal    @default(0) @db.Decimal(10, 2)
+  salaryType        SalaryType @default(MONTHLY)
+  bonusPercent      Decimal    @default(0) @db.Decimal(5, 2)
+  hireDate          DateTime   @default(now())
+  isActive          Boolean    @default(true)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  payments EmployeePayment[]
+  expenses Expense[]
+  shifts   Shift[]
+  fines    Fine[]
+}
+
+model EmployeePayment {
+  id          String      @id @default(uuid())
+  employeeId  String
+  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  expenseId   String?     @unique
+  expense     Expense?    @relation(fields: [expenseId], references: [id])
+  amount      Decimal     @db.Decimal(10, 2)
+  paymentType PaymentType @default(SALARY)
+  period      String?
+  notes       String?
+  paidAt      DateTime    @default(now())
+}
+
+model Shift {
+  id          String    @id @default(uuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  startTime   DateTime
+  endTime     DateTime?
+  hoursWorked Decimal?  @db.Decimal(5, 2)
+  notes       String?
+}
+
+model Fine {
+  id         String    @id @default(uuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  amount     Decimal   @db.Decimal(10, 2)
+  reason     String
+  isApplied  Boolean   @default(false)
+  appliedAt  DateTime?
+  date       DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+
+  @@index([employeeId, isApplied])
+}
+
+// ─── CASHBOX ──────────────────────────────────────────────────────────
+model Cashbox {
+  id          String   @id @default(uuid())
+  businessId  String   @unique
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  balance     Decimal  @default(0) @db.Decimal(12, 2)
+  cardBalance Decimal  @default(0) @db.Decimal(12, 2)
+  currency    String   @default("TJS")
+  lastUpdated DateTime @default(now())
+
+  operations CashboxOperation[]
+}
+
+model CashboxOperation {
+  id            String        @id @default(uuid())
+  cashboxId     String
+  cashbox       Cashbox       @relation(fields: [cashboxId], references: [id], onDelete: Cascade)
+  type          CashboxOpType
+  amount        Decimal       @db.Decimal(12, 2)
+  balanceBefore Decimal       @db.Decimal(12, 2)
+  balanceAfter  Decimal       @db.Decimal(12, 2)
+  description   String?
+  referenceId   String?
+  createdAt     DateTime      @default(now())
+}
+
+// ─── FUNDS ────────────────────────────────────────────────────────────
+model Fund {
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  type       FundType
+  name       String
+  balance    Decimal  @default(0) @db.Decimal(12, 2)
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  transactions FundTransaction[]
+
+  @@unique([businessId, type])
+}
+
+model FundTransaction {
+  id         String          @id @default(uuid())
+  businessId String
+  business   Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  fundId     String
+  fund       Fund            @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  type       TransactionType
+  amount     Decimal         @db.Decimal(12, 2)
+  notes      String?
+  date       DateTime        @default(now())
+  createdAt  DateTime        @default(now())
+
+  @@index([fundId, date])
+}
+
+// ─── DAILY REPORT ─────────────────────────────────────────────────────
+model DailyReport {
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  date       DateTime @db.Date
+
+  totalSales     Decimal @default(0) @db.Decimal(12, 2)
+  cashSales      Decimal @default(0) @db.Decimal(12, 2)
+  cardSales      Decimal @default(0) @db.Decimal(12, 2)
+  extraIncome    Decimal @default(0) @db.Decimal(12, 2)
+  totalIncome    Decimal @default(0) @db.Decimal(12, 2)
+  suppliersTotal Decimal @default(0) @db.Decimal(12, 2)
+  operationalExp Decimal @default(0) @db.Decimal(12, 2)
+  consumablesExp Decimal @default(0) @db.Decimal(12, 2)
+  ownerDraws     Decimal @default(0) @db.Decimal(12, 2)
+  inventoryExp   Decimal @default(0) @db.Decimal(12, 2)
+  totalExpenses  Decimal @default(0) @db.Decimal(12, 2)
+  charityAmount  Decimal @default(0) @db.Decimal(12, 2)
+  remaining      Decimal @default(0) @db.Decimal(12, 2)
+
+  notes       String?
+  isFinalized Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lines     DailyReportLine[]
+  suppliers DailySupplierLine[]
+  draws     DailyOwnerDraw[]
+
+  @@unique([businessId, date])
+  @@index([businessId, date])
+}
+
+model DailyReportLine {
+  id         String      @id @default(uuid())
+  reportId   String
+  report     DailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  label      String
+  amount     Decimal     @db.Decimal(12, 2)
+  type       String
+  subType    String?
+  employeeId String?
+  note       String?
+}
+
+model DailySupplierLine {
+  id         String      @id @default(uuid())
+  reportId   String
+  report     DailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  supplierId String?
+  name       String
+  amount     Decimal     @db.Decimal(12, 2)
+}
+
+model DailyOwnerDraw {
+  id         String      @id @default(uuid())
+  reportId   String
+  report     DailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  employeeId String?
+  ownerName  String
+  amount     Decimal     @db.Decimal(12, 2)
+  note       String?
+}
