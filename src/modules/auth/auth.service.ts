@@ -33,12 +33,16 @@ export class AuthService {
     const token = this.signToken(user.id, user.email);
     return {
       accessToken: token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      access_token: token,
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, businessId: null },
     };
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+      include: { business: true },
+    });
     if (!user || !user.isActive) throw new UnauthorizedException('Invalid credentials');
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
@@ -47,7 +51,14 @@ export class AuthService {
     const token = this.signToken(user.id, user.email);
     return {
       accessToken: token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      access_token: token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        businessId: user.business?.id || null,
+      },
     };
   }
 
