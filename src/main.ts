@@ -47,8 +47,7 @@ async function bootstrap() {
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', name: 'JWT', in: 'header' },
       'JWT',
     )
-    .addServer('https://chocoberry-api.onrender.com', 'Live Render Server')
-    .addServer('http://localhost:3000', 'Local Development Server')
+    .addServer('http://localhost:3000')
     .addTag('auth', 'Authentication & User management')
     .addTag('business', 'Business profile & dashboard')
     .addTag('suppliers', 'Supplier management & purchases')
